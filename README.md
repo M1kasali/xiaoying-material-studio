@@ -1,8 +1,8 @@
 # 拾光 · 素材工作台
 
-小影科技全栈笔试项目。**当前为第一阶段工程骨架，尚未完成可提交的完整笔试作品。**
+小影科技全栈笔试项目。**当前推进到后端业务闭环阶段，前端上传与任务管理仍待实现，尚不是完整交付版本。**
 
-已建立：数据库迁移与模板种子、Java 模板/分类/详情 API、Next.js 模板库和只读详情、原创本地封面、Docker Compose、基础 CI。待完成：身份、上传、后台制作、历史记录、多任务跟踪与核心业务测试。详见 [验收清单](docs/acceptance.md)。
+已实现：Java 模板 API、演示会话、图片上传与私有预览、三阶段异步任务、失败模拟、个人历史和结果 API；Next.js 模板库和只读详情；Docker Compose、后端单元测试及真实 API 验证脚本。待完成：前端账户切换、上传交互、任务提交与跟踪、历史页面及前端核心测试。验证状态见 [验证记录](docs/verification.md)，需求映射见 [验收清单](docs/acceptance.md)。
 
 ## 1. 技术与目录
 
@@ -44,7 +44,9 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Java 默认连接 localhost:3307；可用 DB_URL、DB_USERNAME、DB_PASSWORD 覆盖。前端 BACKEND_URL 默认 http://localhost:8080，Compose 中为 http://backend:8080。前端运行时读取后端地址，无需把内部地址交给浏览器。STORAGE_ROOT 为后续文件存储路径。
+Java 默认连接 localhost:3307；可用 DB_URL、DB_USERNAME、DB_PASSWORD 覆盖。前端 BACKEND_URL 默认 http://localhost:8080，Compose 中为 http://backend:8080。前端运行时读取后端地址，无需把内部地址交给浏览器。STORAGE_ROOT 为文件存储路径。前后端构建基础镜像锁定到本次验证的 digest，以保证重现并复用已下载镜像。
+
+其他配置：DEMO_ENABLED 控制演示登录与模拟参数；SECURE_COOKIE 在 HTTPS 部署时设为 true；ALLOWED_ORIGINS 限制浏览器写请求来源（修改端口时同步修改）；TASK_WORKERS / TASK_QUEUE_CAPACITY 控制执行线程和队列；SIMULATION_DELAY_MS 为每个阶段的默认耗时。默认均适用于本机演示。
 
 ## 3. 构建、检查与接口
 
@@ -56,23 +58,27 @@ pnpm build
 # 回到仓库根目录
 mvn -B -ntp -f backend/pom.xml verify
 docker compose config --quiet
+# 已启动 Compose 后，执行真实 API 测试（Python 标准库，无需 pip）
+python scripts/backend_smoke.py --restart
 ```
 
-CI 在 push/PR 执行上述前后端检查，并启动 Compose 对数据库驱动的模板链路做冒烟验证。当前尚无任务业务自动化测试，不能视为已满足 R-12 全部要求。远端 CI 只有推送后才能验证。
+CI 在 push/PR 执行上述前后端检查，并启动 Compose 验证模板、身份、上传、任务及重启行为。Java 单元测试重点覆盖阶段顺序、每个阶段失败中断、线程中断、重复派发、提交事务边界、队列满与上传校验。前端多任务和异常区分的测试尚待实现，因此 R-12 仍未全部完成。
 
 [API 契约](docs/api.md) 标明已实现与待实现接口；[架构设计](docs/architecture.md) 记录数据表、状态、执行方案及边界。
 
 ## 4. 演示
 
-当前可演示：模板列表、三个分类、不同图片数量要求、详情、未知模板、后端不可用时的错误与重新加载。成功制作、指定阶段失败、耗时调整、多任务和刷新恢复尚待实现，不能按完整作品验收。
+页面目前可演示模板列表、分类、详情、未知模板、加载异常与重试。后端业务可通过 [后端演示步骤](docs/backend-demo.md) 或 `python scripts/backend_smoke.py --restart` 验证。脚本会创建少量演示素材及任务记录，并在指定 --restart 时重启本项目后端。
+
+后台流程是 VALIDATE（素材检查）→ GENERATE（模拟生成）→ FINALIZE（结果整理）。模拟生成选择第一张输入图片，结果整理复制成独立结果文件；不调用 AI，也不伪称实际完成图片变换。前端上传、制作任务 UI 和刷新跟踪仍待接入。
 
 ## 5. 用户身份
 
-计划使用两套演示账户和服务端会话，按用户隔离素材与任务。尚未实现；方案及生产边界见架构文档。
+两套固定演示账户 alice（小拾）、bob（小光），通过 Java 登录接口选择。会话令牌随机生成，数据库只存摘要和过期时间，浏览器用 HttpOnly / SameSite=Lax cookie。更换账户会撤销当前旧会话；素材、任务、历史及结果均在 Java 校验归属。该方案用于本机题目演示，不是生产账号认证；DEMO_ENABLED=false 会关闭演示登录入口和客户端模拟参数。
 
 ## 6. 完成度与实际投入
 
-以 [验收清单](docs/acceptance.md) 和 [验证记录](docs/verification.md) 为准。当前不支持制作任务、用户上传、身份或历史记录；服务重启续跑不在初版范围内。实际投入记录在 [开发记录](docs/worklog.md)，交付时区分 AI 执行时间与本人审阅/调试投入，不编造工作时长。
+以 [验收清单](docs/acceptance.md) 和 [验证记录](docs/verification.md) 为准。前端业务闭环尚未完成。服务重启时将上一次运行中的未完成任务标记为失败，不续跑；数据库或磁盘持续不可用时不能保证即时写入失败状态。当前仅支持单个 Java 实例，不支持集群协调、自动重试、受理幂等或素材自动清理。实际投入记录在 [开发记录](docs/worklog.md)，区分 AI 执行时间与本人投入，不编造工时。
 
 ## 7. 部署与回滚
 

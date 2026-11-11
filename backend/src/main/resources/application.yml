@@ -28,3 +28,9 @@ management:
       show-details: never
 studio:
   storage-root: ${STORAGE_ROOT:./data}
+  demo-enabled: ${DEMO_ENABLED:true}
+  secure-cookie: ${SECURE_COOKIE:false}
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080}
+  worker-count: ${TASK_WORKERS:2}
+  queue-capacity: ${TASK_QUEUE_CAPACITY:32}
+  default-delay-ms: ${SIMULATION_DELAY_MS:2000}

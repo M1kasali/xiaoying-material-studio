@@ -25,6 +25,12 @@ services:
       DB_USERNAME: ${MYSQL_USER:-studio}
       DB_PASSWORD: ${MYSQL_PASSWORD:-studio_local_password}
       STORAGE_ROOT: /app/data
+      DEMO_ENABLED: ${DEMO_ENABLED:-true}
+      SECURE_COOKIE: ${SECURE_COOKIE:-false}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080}
+      TASK_WORKERS: ${TASK_WORKERS:-2}
+      TASK_QUEUE_CAPACITY: ${TASK_QUEUE_CAPACITY:-32}
+      SIMULATION_DELAY_MS: ${SIMULATION_DELAY_MS:-2000}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
     volumes:

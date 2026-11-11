@@ -187,6 +187,13 @@ test("failure injection is explicit, one-shot, and retry resets the same-page fo
   await expect(page.getByText("已恢复正常制作设置，请重新上传图片。", { exact: true })).toBeVisible();
   await expect(page.getByLabel("模拟执行结果")).toHaveValue("");
   await expect(page.getByText("✓ 上传完成", { exact: true })).toHaveCount(0);
+  // Repeating the retry for the same old task must also reset the already-matching URL.
+  await upload(page);
+  await page.locator(".simulation-controls summary").click();
+  await page.getByLabel("模拟执行结果").selectOption("FINALIZE");
+  await failure.getByRole("link", { name: "重新制作", exact: true }).click();
+  await expect(page.getByLabel("模拟执行结果")).toHaveValue("");
+  await expect(page.getByText("✓ 上传完成", { exact: true })).toHaveCount(0);
   await upload(page);
   const submitted = page.waitForRequest(request => request.url().endsWith("/api/tasks") && request.method() === "POST");
   const succeeded = await create(page);

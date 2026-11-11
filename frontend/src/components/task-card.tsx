@@ -6,6 +6,15 @@ import { api, ApiError, message } from "@/lib/client-api";
 import { active, mergeTask, pollDelay, stages, stageLabels, statusLabels, type Task } from "@/lib/task-state";
 import { useSession } from "./session-provider";
 
+function restartDraft(event: React.MouseEvent<HTMLAnchorElement>) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  const destination = new URL(event.currentTarget.href);
+  // A distinct draft URL also resets repeated retries of the same history entry.
+  destination.searchParams.set("retry", crypto.randomUUID());
+  window.location.assign(destination.href);
+}
+
 export function TaskCard({ id, initial, full = false }: { id: string; initial?: Task; full?: boolean }) {
   const [task, setTask] = useState<Task | null>(initial ?? null);
   const [queryError, setQueryError] = useState<string | null>(null);
@@ -50,7 +59,7 @@ export function TaskCard({ id, initial, full = false }: { id: string; initial?: 
       })}</ol>
       {task.status === "QUEUED" && <p className="muted">任务已受理，正在等待空闲制作位置。</p>}
       {task.status === "RUNNING" && <p className="muted">可以离开页面或继续创建新任务，在「我的作品」查看进度。</p>}
-      {task.status === "FAILED" && <div className="failure-panel" role="alert"><strong>{task.failureStage ? `${stageLabels[task.failureStage]}失败` : "制作未完成"}</strong>{simulatedFailure && <p>这是主动指定的失败测试，任务已按设置中止。正常制作默认不触发此失败。</p>}<p>{task.failureReason ?? "任务未能完成，请重新制作。"}</p><Link className="secondary-button" href={`/templates/${task.templateId}?retry=${encodeURIComponent(task.id)}#production-form`}>重新制作</Link></div>}
+      {task.status === "FAILED" && <div className="failure-panel" role="alert"><strong>{task.failureStage ? `${stageLabels[task.failureStage]}失败` : "制作未完成"}</strong>{simulatedFailure && <p>这是主动指定的失败测试，任务已按设置中止。正常制作默认不触发此失败。</p>}<p>{task.failureReason ?? "任务未能完成，请重新制作。"}</p><a className="secondary-button" href={`/templates/${task.templateId}?retry=${encodeURIComponent(task.id)}#production-form`} onClick={restartDraft}>重新制作</a></div>}
       {task.status === "SUCCEEDED" && task.resultUrl && <div className="result-panel">
         {/* Authenticated, original uploaded image; Next image optimization must not cache it publicly. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

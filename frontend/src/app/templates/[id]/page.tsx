@@ -7,8 +7,10 @@ import { ProductionForm } from "@/components/production-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function TemplateDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function TemplateDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ retry?: string | string[] }> }) {
   const { id } = await params;
+  const { retry } = await searchParams;
+  const retryKey = typeof retry === "string" && /^[a-f0-9-]{36}$/.test(retry) ? retry : "";
   const response = await fetch(backendUrl(`/api/templates/${encodeURIComponent(id)}`), {
     cache: "no-store", signal: AbortSignal.timeout(8000),
   });
@@ -18,7 +20,7 @@ export default async function TemplateDetail({ params }: { params: Promise<{ id:
   return (
     <div className="page-shell">
       <Link className="back-link" href="/">← 返回模板库</Link>
-      <ProductionForm template={template}><article className="studio-template">
+      <ProductionForm template={template} retryKey={retryKey}><article className="studio-template">
         <div className="detail-cover"><Image src={template.coverUrl} alt={`${template.title}示例封面`} fill sizes="(max-width: 700px) 90vw, 420px" unoptimized priority /></div>
         <div className="detail-copy">
           <p className="eyebrow">{template.category}</p><h1>{template.title}</h1>

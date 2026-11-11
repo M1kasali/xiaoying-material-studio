@@ -11,6 +11,7 @@ export function TaskCard({ id, initial, full = false }: { id: string; initial?: 
   const [queryError, setQueryError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const { invalidate } = useSession();
+  const simulatedFailure = task?.status === "FAILED" && task.failureReason?.startsWith("模拟失败：");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -39,7 +40,7 @@ export function TaskCard({ id, initial, full = false }: { id: string; initial?: 
   }, [id, initial, attempt, invalidate]);
 
   return <article className={`task-card ${full ? "task-full" : ""}`} data-task-id={id} data-status={task?.status ?? "LOADING"}>
-    <div className="task-heading"><div><p className="eyebrow">{task ? new Date(task.createdAt).toLocaleString("zh-CN", { hour12: false }) : "正在读取任务"}</p><h2>{task ? <Link href={`/tasks/${id}`}>{task.templateTitle}</Link> : "加载制作记录…"}</h2></div>{task && <span className={`status-pill status-${task.status.toLowerCase()}`} role="status">{statusLabels[task.status]}</span>}</div>
+    <div className="task-heading"><div><p className="eyebrow">{task ? new Date(task.createdAt).toLocaleString("zh-CN", { hour12: false }) : "正在读取任务"}</p><h2>{task ? <Link href={`/tasks/${id}`}>{task.templateTitle}</Link> : "加载制作记录…"}</h2></div>{task && <span className={`status-pill status-${task.status.toLowerCase()}`} role="status">{simulatedFailure ? "模拟失败 · 演示" : statusLabels[task.status]}</span>}</div>
     {queryError && <div className="query-warning" role="alert"><p>{queryError}</p><button className="text-button" onClick={() => setAttempt(value => value + 1)}>重新查询</button></div>}
     {task && <>
       <ol className="task-steps" aria-label="制作步骤">{stages.map((stage, index) => {
@@ -49,7 +50,7 @@ export function TaskCard({ id, initial, full = false }: { id: string; initial?: 
       })}</ol>
       {task.status === "QUEUED" && <p className="muted">任务已受理，正在等待空闲制作位置。</p>}
       {task.status === "RUNNING" && <p className="muted">可以离开页面或继续创建新任务，在「我的作品」查看进度。</p>}
-      {task.status === "FAILED" && <div className="failure-panel" role="alert"><strong>{task.failureStage ? `${stageLabels[task.failureStage]}失败` : "制作未完成"}</strong><p>{task.failureReason ?? "任务未能完成，请重新制作。"}</p><Link className="secondary-button" href={`/templates/${task.templateId}`}>重新制作</Link></div>}
+      {task.status === "FAILED" && <div className="failure-panel" role="alert"><strong>{task.failureStage ? `${stageLabels[task.failureStage]}失败` : "制作未完成"}</strong>{simulatedFailure && <p>这是主动指定的失败测试，任务已按设置中止。正常制作默认不触发此失败。</p>}<p>{task.failureReason ?? "任务未能完成，请重新制作。"}</p><Link className="secondary-button" href={`/templates/${task.templateId}?retry=${encodeURIComponent(task.id)}#production-form`}>重新制作</Link></div>}
       {task.status === "SUCCEEDED" && task.resultUrl && <div className="result-panel">
         {/* Authenticated, original uploaded image; Next image optimization must not cache it publicly. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}

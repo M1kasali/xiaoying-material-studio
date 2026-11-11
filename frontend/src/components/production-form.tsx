@@ -77,7 +77,11 @@ function Form({ template, onCreated, hasCreated }: { template: Template; onCreat
       const task = await api<Task>("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
         body: JSON.stringify({ templateId: template.id, assetIds: slots.map(slot => slot.asset!.id), simulation: { delayMs: delay, ...(failAt ? { failAt } : {}) } }),
       });
-      if (!controller.signal.aborted) onCreated(task);
+      if (!controller.signal.aborted) {
+        // Fault injection is opt-in for one accepted submission, never a sticky retry default.
+        setFailAt("");
+        onCreated(task);
+      }
     } catch (err) {
       if (controller.signal.aborted) return;
       if (err instanceof ApiError && err.status === 401) { invalidate(); return; }
@@ -85,7 +89,7 @@ function Form({ template, onCreated, hasCreated }: { template: Template; onCreat
     } finally { busy.current = false; if (!controller.signal.aborted) setSubmitting(false); }
   }
 
-  return <div className="production-area">
+  return <div className="production-area" id="production-form">
     <form onSubmit={event => void submit(event)}>
       <div className="section-heading"><h2>上传你的照片</h2><span className="muted">{slots.filter(slot => slot.status === "ready").length} / {template.requiredImageCount} 已上传</span></div>
       <div className="upload-grid">{slots.map((slot, index) => <UploadSlot key={index} index={index} slot={slot} template={template} locked={submitting} onChange={next => setSlots(previous => previous.map((value, i) => i === index ? next : value))} />)}</div>
@@ -93,24 +97,25 @@ function Form({ template, onCreated, hasCreated }: { template: Template; onCreat
         <label>每阶段耗时<select aria-label="每阶段耗时" value={delay} disabled={submitting} onChange={event => setDelay(Number(event.target.value))}><option value={800}>快速 · 0.8 秒</option><option value={2500}>标准 · 2.5 秒</option><option value={8000}>慢速 · 8 秒</option></select></label>
         <label>模拟执行结果<select aria-label="模拟执行结果" value={failAt} disabled={submitting} onChange={event => setFailAt(event.target.value as Stage | "")}><option value="">全部成功</option>{stages.map(stage => <option key={stage} value={stage}>{stageLabels[stage]}失败</option>)}</select></label>
       </div></details>
+      {failAt && <div className="query-warning simulation-warning" role="alert"><strong>本次将故意触发「{stageLabels[failAt]}失败」</strong><p>仅用于验证失败处理，只对下一次受理的任务生效。</p><button type="button" className="text-button" disabled={submitting} onClick={() => setFailAt("")}>取消失败模拟</button></div>}
       <p className="muted simulation-note">此为流程演示，结果使用第一张素材的副本，不调用 AI。</p>
       {submitError && <div className="query-warning" role="alert"><p>{submitError}</p><Link href="/history">查看我的作品 →</Link></div>}
-      <div className="button-row"><button className="primary-button" type="submit" disabled={!ready || submitting}>{submitting ? "正在提交…" : hasCreated ? "再创建一个任务" : "开始制作"}</button><span className="muted">{submitting ? "等待服务器确认受理" : !ready ? `请先上传 ${template.requiredImageCount} 张图片` : "素材已就绪"}</span></div>
+      <div className="button-row"><button className="primary-button" type="submit" disabled={!ready || submitting}>{submitting ? "正在提交…" : failAt ? "提交一次失败测试" : hasCreated ? "再创建一个任务" : "开始制作"}</button><span className="muted">{submitting ? "等待服务器确认受理" : !ready ? `请先上传 ${template.requiredImageCount} 张图片` : "素材已就绪"}</span></div>
       {hasCreated && <p className="accepted-note" role="status">任务已受理，可继续创建。刷新后仍可查看制作记录。</p>}
     </form>
   </div>;
 }
 
-function Studio({ template, children }: { template: Template; children: React.ReactNode }) {
+function Studio({ template, children, retryKey }: { template: Template; children: React.ReactNode; retryKey: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { user, loading } = useSession();
   return <div className="studio-layout">
-    <section className="studio-input">{children}<AccountGate><Form template={template} hasCreated={tasks.length > 0} onCreated={task => setTasks(previous => [task, ...previous])} /></AccountGate></section>
+    <section className="studio-input">{children}<AccountGate>{retryKey && <p className="accepted-note">已恢复正常制作设置，请重新上传图片。</p>}<Form key={retryKey} template={template} hasCreated={tasks.length > 0} onCreated={task => setTasks(previous => [task, ...previous])} /></AccountGate></section>
     <section className="studio-history"><div className="section-heading"><h2>制作记录</h2><Link href="/history">查看全部作品 →</Link></div>{user ? <HistoryList recent={tasks} /> : <div className="message-panel"><p className="muted">{loading ? "正在读取账户…" : "选择演示账户后，这里会显示你的制作进度与历史结果。"}</p></div>}</section>
   </div>;
 }
 
-export function ProductionForm({ template, children }: { template: Template; children: React.ReactNode }) {
+export function ProductionForm({ template, children, retryKey = "" }: { template: Template; children: React.ReactNode; retryKey?: string }) {
   const { user } = useSession();
-  return <Studio key={`${template.id}:${user?.id ?? "guest"}`} template={template}>{children}</Studio>;
+  return <Studio key={`${template.id}:${user?.id ?? "guest"}`} template={template} retryKey={retryKey}>{children}</Studio>;
 }

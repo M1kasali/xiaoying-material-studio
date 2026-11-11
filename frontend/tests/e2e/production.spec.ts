@@ -14,7 +14,7 @@ async function upload(page: Page) {
 }
 async function create(page: Page) {
   const response = page.waitForResponse(res => res.url().endsWith("/api/tasks") && res.request().method() === "POST");
-  await page.getByRole("button", { name: /^(开始制作|再创建一个任务)$/ }).click();
+  await page.getByRole("button", { name: /^(开始制作|再创建一个任务|提交一次失败测试)$/ }).click();
   const accepted = await response;
   expect(accepted.status()).toBe(202);
   return (await accepted.json()).id as string;
@@ -166,4 +166,30 @@ test("two-image template requires both uploads and blocks double submit", async 
   await expect(page.getByRole("button", { name: "正在提交…", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "再创建一个任务", exact: true })).toBeEnabled();
   expect(posts).toBe(1);
+});
+
+test("failure injection is explicit, one-shot, and retry resets the same-page form", async ({ page }) => {
+  await setup(page); await upload(page);
+  await page.locator(".simulation-controls summary").click();
+  await page.getByLabel("模拟执行结果").selectOption("GENERATE");
+  await page.locator(".simulation-controls summary").click();
+  await expect(page.getByText("本次将故意触发「模拟生成失败」", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "提交一次失败测试", exact: true })).toBeEnabled();
+  const failed = await create(page);
+  await expect(page.getByLabel("模拟执行结果")).toHaveValue("");
+  const failure = page.locator(`[data-task-id="${failed}"]`);
+  await expect(failure).toHaveAttribute("data-status", "FAILED");
+  await expect(failure.getByText("模拟失败 · 演示", { exact: true })).toBeVisible();
+  // Even if another failure is selected, the retry action must return to normal defaults.
+  await page.locator(".simulation-controls summary").click();
+  await page.getByLabel("模拟执行结果").selectOption("FINALIZE");
+  await failure.getByRole("link", { name: "重新制作", exact: true }).click();
+  await expect(page.getByText("已恢复正常制作设置，请重新上传图片。", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("模拟执行结果")).toHaveValue("");
+  await expect(page.getByText("✓ 上传完成", { exact: true })).toHaveCount(0);
+  await upload(page);
+  const submitted = page.waitForRequest(request => request.url().endsWith("/api/tasks") && request.method() === "POST");
+  const succeeded = await create(page);
+  expect((await submitted).postDataJSON().simulation.failAt).toBeUndefined();
+  await expect(page.locator(`[data-task-id="${succeeded}"]`)).toHaveAttribute("data-status", "SUCCEEDED");
 });

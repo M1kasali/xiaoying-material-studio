@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" role="img" aria-labelledby="title">
+<title id="title">A POSTCARD FROM THE SEA</title><rect width="600" height="800" fill="#679ba4"/>
+
+<circle cx="444" cy="241" r="65" fill="#f4d99a"/><path d="M0 390Q140 310 300 400T600 380V800H0" fill="#346e7e"/>
+<path d="M0 490Q120 410 280 490T600 440V800H0" fill="#224f60"/><path d="M0 635Q190 540 380 665T600 650V800H0" fill="#e5cfaa"/>
+<path d="M0 620Q190 525 380 650T600 635" fill="none" stroke="#fff3d8" stroke-width="12"/>
+<path d="M130 280l18-10 18 10m30 20 15-8 15 8" fill="none" stroke="#fff4d7" stroke-width="3"/>
+<rect x="432" y="640" width="114" height="90" rx="2" fill="#f7eee0" transform="rotate(9 489 685)"/>
+<text x="450" y="691" fill="#517681" font-size="22" font-family="Georgia,serif" transform="rotate(9 489 685)">Hello.</text>
+<text x="38" y="66" fill="#ffffff" font-family="Georgia,serif" font-size="24" letter-spacing="2">A POSTCARD FROM THE SEA</text>
+<text x="40" y="98" fill="#ffffff" font-family="sans-serif" font-size="11" letter-spacing="3">COLLECT LITTLE MOMENTS</text>
+<path d="M40 124H560" stroke="#ffffff" stroke-opacity=".35"/>
+</svg>

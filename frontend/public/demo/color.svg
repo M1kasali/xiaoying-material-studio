@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" role="img" aria-labelledby="title">
+<title id="title">A DAY IN THREE COLORS</title><rect width="600" height="800" fill="#d8cbb8"/>
+
+<rect x="40" y="163" width="520" height="175" fill="#bc705b"/><circle cx="410" cy="250" r="66" fill="#e4b19a"/>
+<path d="M40 338 180 180 310 338" fill="#934f45"/><rect x="40" y="355" width="520" height="175" fill="#647f76"/>
+<path d="M40 485q140-150 270 0t250-10v55H40" fill="#b1bfa3"/><path d="M40 520q160-130 320-10t200-50v70H40" fill="#3e5c53"/>
+<rect x="40" y="547" width="520" height="175" fill="#d2ad65"/><path d="M230 722V630a70 70 0 0 1 140 0v92" fill="#f0ddae"/>
+<path d="M0 800 600 742" stroke="#b6a691" stroke-width="2"/>
+<text x="38" y="66" fill="#ffffff" font-family="Georgia,serif" font-size="24" letter-spacing="2">A DAY IN THREE COLORS</text>
+<text x="40" y="98" fill="#ffffff" font-family="sans-serif" font-size="11" letter-spacing="3">YOUR EVERYDAY EDIT</text>
+<path d="M40 124H560" stroke="#ffffff" stroke-opacity=".35"/>
+</svg>
